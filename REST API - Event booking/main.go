@@ -10,6 +10,7 @@ func main() {
 	server := gin.Default()
 
 	server.POST(`/signup`, createUser)
+	server.POST(`/login`, login)
 
 	server.Run(":8000") // localhost:8000
 }
