@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"example.com/REST-API-Event-Booking/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,5 +10,5 @@ func RegisterRoutes(server *gin.Engine) {
 	server.POST(`/login`, login)
 
 	// Events
-	server.POST(`/events`, createEvent)
+	server.POST(`/events`, middlewares.Authenticate, createEvent)
 }
