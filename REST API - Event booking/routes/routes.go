@@ -12,4 +12,5 @@ func RegisterRoutes(server *gin.Engine) {
 	// Events
 	server.GET(`/events`, getEvents)
 	server.POST(`/events`, middlewares.Authenticate, createEvent)
+	server.GET(`/events/:id`, getEventById)
 }
