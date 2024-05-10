@@ -77,3 +77,21 @@ func (e *Event) Save() error {
 	e.ID = id
 	return err
 }
+
+func (event Event) Update() error {
+	query := `
+	UPDATE events
+	SET name = ?, description = ?, location = ?, dateTime = ?
+	WHERE id = ?
+	`
+	row, err := db.DB.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+
+	defer row.Close()
+
+	_, err = row.Exec(event.Name, event.Description, event.Location, event.DateTime, event.ID)
+	return err
+}
