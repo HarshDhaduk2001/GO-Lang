@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"errors"
 
 	"example.com/REST-API-Event-Booking/db"
@@ -19,41 +18,39 @@ func FindUserByEmail(email string) (*User, error) {
 	query := "SELECT id, email, password FROM users WHERE email = ?"
 	err := db.DB.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil // User not found
 		}
-		return nil, err
+		return nil, errors.New("failed to find user by email")
 	}
 	return &user, nil
 }
 
-
 func (u User) Save() error {
 	query := "INSERT INTO users(email, password) VALUES (?, ?)"
 	row, err := db.DB.Prepare(query)
-
 	if err != nil {
-		return err
+		return errors.New("failed to prepare database for user insertion")
 	}
-
 	defer row.Close()
 
 	hashedPassword, err := utils.HashPassword(u.Password)
-
 	if err != nil {
-		return err
+		return errors.New("failed to hash user password")
 	}
 
 	result, err := row.Exec(u.Email, hashedPassword)
-
 	if err != nil {
-		return err
+		return errors.New("failed to insert user into database")
 	}
 
 	userId, err := result.LastInsertId()
+	if err != nil {
+		return errors.New("failed to retrieve last inserted ID")
+	}
 
 	u.ID = userId
-	return err
+	return nil
 }
 
 func (u *User) ValidateCredentials() error {
@@ -62,15 +59,13 @@ func (u *User) ValidateCredentials() error {
 
 	var retrievedPassword string
 	err := row.Scan(&u.ID, &retrievedPassword)
-
 	if err != nil {
-		return errors.New("Invalid credentials" + err.Error())
+		return errors.New("invalid credentials")
 	}
 
 	passwordIsValid := utils.CheckPasswordHash(u.Password, retrievedPassword)
-
 	if !passwordIsValid {
-		return errors.New("Invalid credentials" + err.Error())
+		return errors.New("invalid credentials")
 	}
 
 	return nil
