@@ -17,6 +17,18 @@ func createUser(context *gin.Context) {
 		return
 	}
 
+	// Check if the user already exists
+	existingUser, err := models.FindUserByEmail(user.Email)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Error checking user existence."})
+		return
+	}
+
+	if existingUser != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "User with this email already exists."})
+		return
+	}
+
 	err = user.Save()
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not save user."})
@@ -25,6 +37,7 @@ func createUser(context *gin.Context) {
 
 	context.JSON(http.StatusCreated, gin.H{"message": "User created successfully!"})
 }
+
 
 func login(context *gin.Context) {
 	var user models.User
