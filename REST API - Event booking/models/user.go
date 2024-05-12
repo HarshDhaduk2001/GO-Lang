@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 
 	"example.com/REST-API-Event-Booking/db"
@@ -12,6 +13,20 @@ type User struct {
 	Email    string `binding:"required"`
 	Password string `binding:"required"`
 }
+
+func FindUserByEmail(email string) (*User, error) {
+	var user User
+	query := "SELECT id, email, password FROM users WHERE email = ?"
+	err := db.DB.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 
 func (u User) Save() error {
 	query := "INSERT INTO users(email, password) VALUES (?, ?)"
