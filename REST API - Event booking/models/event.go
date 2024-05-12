@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
 	"time"
 
 	"example.com/REST-API-Event-Booking/db"
@@ -13,6 +15,12 @@ type Event struct {
 	Location    string     `binding:"required"`
 	DateTime    *time.Time `binding:"required"`
 	UserID      int64
+}
+
+type Registration struct {
+	ID      int64
+	EventID int64
+	UserID  int64
 }
 
 func GetAllEvents() ([]Event, error) {
@@ -86,14 +94,53 @@ func (event *Event) Delete() error {
 }
 
 func (e *Event) Register(userId int64) error {
+	exists, err := e.CheckRegistrationExists(userId)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return errors.New("Event registration already exists")
+	}
+
 	query := "INSERT INTO registrations(event_id, user_id) VALUES (?, ?)"
-	_, err := db.DB.Exec(query, e.ID, userId)
+	_, err = db.DB.Exec(query, e.ID, userId)
 	return err
 }
 
-func (e *Event) CancelRegistration(eventId int64) error {
-	query := "DELETE FROM registrations WHERE event_id = ?"
-	_, err := db.DB.Exec(query, eventId)
+func (e *Event) CheckRegistrationExists(userId int64) (bool, error) {
+	query := "SELECT COUNT(*) FROM registrations WHERE event_id = ? AND user_id = ?"
+	var count int
+	err := db.DB.QueryRow(query, e.ID, userId).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func GetEventRegistrationById(id int64) (*Registration, error) {
+	query := "SELECT * FROM registrations WHERE id = ?"
+	row := db.DB.QueryRow(query, id)
+
+	var registration Registration
+	err := row.Scan(&registration.ID, &registration.EventID, &registration.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &registration, nil
+}
+
+func CancelEventRegistration(eventId int64) error {
+	_, err := GetEventRegistrationById(eventId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("Event registration not found")
+		}
+		return err
+	}
+
+	query := "DELETE FROM registrations WHERE id = ?"
+	_, err = db.DB.Exec(query, eventId)
 	return err
 }
 
