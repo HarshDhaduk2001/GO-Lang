@@ -15,15 +15,6 @@ type Event struct {
 	UserID      int64
 }
 
-// type Event struct {
-// 	ID          int64      `db:"id" binding:"required"`
-// 	Name        string     `db:"name" binding:"required"`
-// 	Description string     `db:"description" binding:"required"`
-// 	Location    string     `db:"location" binding:"required"`
-// 	DateTime    *time.Time `db:"dateTime" binding:"required"`
-// 	UserID      int        `db:"user_id"`
-// }
-
 func GetAllEvents() ([]Event, error) {
 	query := "SELECT * FROM events"
 	rows, err := db.DB.Query(query)
@@ -75,67 +66,42 @@ func (e *Event) Save() error {
 	}
 	id, err := result.LastInsertId()
 	e.ID = id
-	return err
+	return nil
 }
 
-func (event Event) Update() error {
+func (event *Event) Update() error {
 	query := `
 	UPDATE events
 	SET name = ?, description = ?, location = ?, dateTime = ?
 	WHERE id = ?
 	`
-	row, err := db.DB.Prepare(query)
-
-	if err != nil {
-		return err
-	}
-
-	defer row.Close()
-
-	_, err = row.Exec(event.Name, event.Description, event.Location, event.DateTime, event.ID)
+	_, err := db.DB.Exec(query, event.Name, event.Description, event.Location, event.DateTime, event.ID)
 	return err
 }
 
-func (event Event) Delete() error {
+func (event *Event) Delete() error {
 	query := "DELETE FROM events WHERE id = ?"
-	row, err := db.DB.Prepare(query)
-
-	if err != nil {
-		return err
-	}
-
-	defer row.Close()
-
-	_, err = row.Exec(event.ID)
+	_, err := db.DB.Exec(query, event.ID)
 	return err
 }
 
-func (e Event) Register(userId int64) error {
+func (e *Event) Register(userId int64) error {
 	query := "INSERT INTO registrations(event_id, user_id) VALUES (?, ?)"
-	row, err := db.DB.Prepare(query)
-
-	if err != nil {
-		return err
-	}
-	defer row.Close()
-
-	_, err = row.Exec(e.ID, userId)
-
+	_, err := db.DB.Exec(query, e.ID, userId)
 	return err
 }
 
-func (e Event) CancelRegistration(eventId int64) error {
-	query := "DELETE FROM registrations WHERE id = ?"
-
-	row, err := db.DB.Prepare(query)
-
-	if err != nil {
-		return err
-	}
-
-	defer row.Close()
-
-	_, err = row.Exec(eventId)
-
+func (e *Event) CancelRegistration(eventId int64) error {
+	query := "DELETE FROM registrations WHERE event_id = ?"
+	_, err := db.DB.Exec(query, eventId)
 	return err
 }
+
+// type Event struct {
+// 	ID          int64      `db:"id" binding:"required"`
+// 	Name        string     `db:"name" binding:"required"`
+// 	Description string     `db:"description" binding:"required"`
+// 	Location    string     `db:"location" binding:"required"`
+// 	DateTime    *time.Time `db:"dateTime" binding:"required"`
+// 	UserID      int        `db:"user_id"`
+// }
