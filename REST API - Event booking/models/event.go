@@ -6,21 +6,22 @@ import (
 	"time"
 
 	"example.com/REST-API-Event-Booking/db"
+	"example.com/REST-API-Event-Booking/utils"
 )
 
 type Event struct {
 	ID          int64
-	Name        string     `binding:"required"`
-	Description string     `binding:"required"`
-	Location    string     `binding:"required"`
-	DateTime    *time.Time `binding:"required"`
-	UserID      int64
+	Name        string     `json:"name" binding:"required"`
+	Description string     `json:"description" binding:"required"`
+	Location    string     `json:"location" binding:"required"`
+	DateTime    *time.Time `json:"dateTime" binding:"required"`
+	UserID      int64      `json:"userId"`
 }
 
 type Registration struct {
-	ID      int64
-	EventID int64
-	UserID  int64
+	ID      int64 `json:"id"`
+	EventID int64 `json:"eventId"`
+	UserID  int64 `json:"userId"`
 }
 
 func GetAllEvents() ([]Event, error) {
@@ -54,6 +55,9 @@ func GetEventById(id int64) (*Event, error) {
 	err := row.Scan(&event.ID, &event.Name, &event.Description, &event.Location, &event.DateTime, &event.UserID)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New(utils.ErrEventNotFound)
+		}
 		return nil, err
 	}
 	return &event, nil
@@ -99,7 +103,7 @@ func (e *Event) Register(userId int64) error {
 		return err
 	}
 	if exists {
-		return errors.New("Event registration already exists")
+		return errors.New(utils.ErrEventRegistrationExists)
 	}
 
 	query := "INSERT INTO registrations(event_id, user_id) VALUES (?, ?)"
@@ -124,6 +128,9 @@ func GetEventRegistrationById(id int64) (*Registration, error) {
 	var registration Registration
 	err := row.Scan(&registration.ID, &registration.EventID, &registration.UserID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New(utils.ErrEventRegistrationNotFound)
+		}
 		return nil, err
 	}
 
@@ -134,7 +141,7 @@ func CancelEventRegistration(eventId int64) error {
 	_, err := GetEventRegistrationById(eventId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return errors.New("Event registration not found")
+			return errors.New(utils.ErrEventRegistrationNotFound)
 		}
 		return err
 	}
