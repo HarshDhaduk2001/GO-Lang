@@ -10,28 +10,21 @@ import (
 
 func createUser(context *gin.Context) {
 	var user models.User
-	err := context.ShouldBindJSON(&user)
-
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format in the request body."})
+	if err := context.ShouldBindJSON(&user); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": utils.ErrInvalidJSONFormat})
 		return
 	}
 
-	// Check if the user already exists
-	existingUser, err := models.FindUserByEmail(user.Email)
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking user existence."})
+	if existingUser, err := models.FindUserByEmail(user.Email); err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": utils.ErrErrorCheckingExistence})
+		return
+	} else if existingUser != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": utils.ErrUserExists})
 		return
 	}
 
-	if existingUser != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": "User with this email already exists."})
-		return
-	}
-
-	err = user.Save()
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save user."})
+	if err := user.Save(); err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": utils.ErrCouldNotSaveUser})
 		return
 	}
 
@@ -41,24 +34,19 @@ func createUser(context *gin.Context) {
 func login(context *gin.Context) {
 	var user models.User
 
-	err := context.ShouldBindJSON(&user)
-
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format in the request body."})
+	if err := context.ShouldBindJSON(&user); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": utils.ErrInvalidJSONFormat})
 		return
 	}
 
-	err = user.ValidateCredentials()
-
-	if err != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+	if err := user.ValidateCredentials(); err != nil {
+		context.JSON(http.StatusUnauthorized, gin.H{"error": utils.ErrInvalidCredentials})
 		return
 	}
 
 	token, err := utils.GenerateToken(user.Email, user.ID)
-
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate authentication token."})
+		context.JSON(http.StatusInternalServerError, gin.H{"error": utils.ErrFailedToGenerateToken})
 		return
 	}
 
