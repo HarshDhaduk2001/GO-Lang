@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"example.com/REST-API-Event-Booking/models"
+	"example.com/REST-API-Event-Booking/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,18 +26,18 @@ func registerForEvent(context *gin.Context) {
 	eventId, err := strconv.ParseInt(eventIdStr, 10, 64)
 
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid event ID format."})
+		context.JSON(http.StatusBadRequest, gin.H{"message": utils.ErrInvalidEventIDFormat})
 		return
 	}
 
 	event, err := models.GetEventById(eventId)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch event."})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": utils.ErrFailedToFetchEventDetails})
 		return
 	}
 
 	if event == nil {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Event not found."})
+		context.JSON(http.StatusNotFound, gin.H{"message": utils.ErrEventNotFound})
 		return
 	}
 
@@ -46,7 +47,7 @@ func registerForEvent(context *gin.Context) {
 			context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 			return
 		}
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to register for event."})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": utils.ErrFailedToCreateEvent})
 		return
 	}
 
