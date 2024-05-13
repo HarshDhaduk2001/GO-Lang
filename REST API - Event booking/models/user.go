@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 
 	"example.com/REST-API-Event-Booking/db"
@@ -18,8 +19,8 @@ func FindUserByEmail(email string) (*User, error) {
 	query := "SELECT id, email, password FROM users WHERE email = ?"
 	err := db.DB.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return nil, nil // User not found
+		if err == sql.ErrNoRows {
+			return nil, nil
 		}
 		return nil, errors.New("failed to find user by email")
 	}
